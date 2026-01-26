@@ -1,0 +1,101 @@
+:root{
+    --accent010: rgba(71,74,255,0.1);
+    --accent100: #4F46E5;
+    --black100: #121212;
+    --black050: rgba(18,18,18,0.5);
+    --black020:rgba(18,18,18,0.2);
+    --black010:rgba(18,18,18,0.1);
+    --black005:rgba(18,18,18,0.05);
+
+    --white100:#fefefe;
+    --white30:#CCCCCC;
+    --white20:#E6E6E6;
+
+    
+    --bg1: #FFFFFF;
+    --bg2: #F5F5F5;
+    --bg3: linear-gradient(180deg, #fefefe 0%, #e2e2e2 100%);
+
+    --red100: #ff0000;
+    --red005:rgba(255,0,0,0.05);
+
+    --green100:#0FBB1E;
+    --green005:rgba(15,187,30,0.05);
+
+    --shadow: filter: drop-shadow(0px 4px 16px rgba(18,18,18,0.25));
+
+    --gr3: linear-gradient(180deg, #121212 0%, #5C5C5C 100%);
+    --gr4: linear-gradient(180deg, #5D23CE 0%, #8E4EF6 100%);
+    --gr5: linear-gradient(180deg, #E966DE 0%, #EE7FEF 10%, #EB4FCC 25%, #EA3DBE 50%, #E939B7 75%, #D739A6 90%, #CF37A5 100%);
+    --gr6: linear-gradient(180deg, rgba(15, 187, 30 , 0) 0%, rgba(167, 229, 30 , 61) 100%);
+    --gr7: linear-gradient(180deg, #57D2F1 0%, #3D8EE5 100%);
+    --gr8: linear-gradient(180deg, #0FBB1E 0%, #A7E53D 100%);
+
+
+
+}
+
+.black100{
+    color: var(--black100);
+}
+
+.black050{
+    color: var(--black050);
+}
+
+.white100{
+    color: var(--white100);
+}
+
+.accent100{
+    color: var(--accent100);
+}
+
+.red100{
+    color: var(--red100);
+}
+
+.bg-gr4{
+    background: var(--gr4);
+}
+
+.bg-black100{
+    background-color: var(--black100);
+}
+
+.bg-black005{
+    background-color: var(--black005);
+}
+
+.bg-black010{
+    background-color: var(--black010);
+}
+
+.bg-white100{
+    background-color: var(--white100);
+}
+
+.bg-red005{
+    background-color: var(--red005);
+}
+
+.positive100{
+    color: var(--green100) !important;
+}
+
+.bg-positive005{
+    background-color: var(--green005);
+}
+
+.gr7{
+    background: var(--gr7) !important;
+    
+    box-shadow: 0 4px 8px 0 rgba(69, 165, 223, 0.35), -1px -1px 1px 0 rgba(254, 254, 254, 0.25) inset, 1px 1px 1px 0 rgba(254, 254, 254, 0.40) inset !important;
+}
+
+.gr8{
+    background: var(--gr8) !important;
+    box-shadow: 0 4px 8px 0 rgba(46, 196, 36, 0.35), -1px -1px 1px 0 rgba(254, 254, 254, 0.25) inset, 1px 1px 1px 0 rgba(254, 254, 254, 0.40) inset !important;
+}
+
+

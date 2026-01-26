@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}Q-RYER{% endblock %}
+
+{% block head %}
+  <!-- Mapbox GL CSS -->
+  <!-- City Selector CSS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+
+<!-- Loader -->
+<div id="pageLoader" class="page-loader">
+    <div class="loader-content">
+      
+      <img src="{{ url_for('static', filename='img/icon/qryer_icon.png') }}" alt="Q-RYER icon" class="loader-logo">
+
+
+    </div>
+</div>
+
+
+
+
+  <!-- Overlay-->
+   <div class="overlay">
+      <h1 class="white100 w100 tac">Увы, но игра доступна<br>только через мобильную версию</h1>
+      <img class="w100" src="{{ url_for('static', filename='img/desktop-overlay.jpg') }}" loading="lazy" alt="hero" style="height: 100vh; width: auto;">
+   </div>
+
+  <!-- Временная отладочная панель -->
+  <div id="debugPanel" class="debug-panel" style="display: block;">
+    <div>GPS: <span id="debugGPS">❌</span></div>
+    <div>State: <span id="debugState">init</span></div>
+    <div>Button: <span id="debugButton">—</span></div>
+  </div>
+
+  <!--Map Header с балансом-->
+  <div class="map_header">
+    <div class="balance">
+      <span class="hstack gap4 aic">
+        <img src="{{ url_for('static', filename='img/icon/qoin.png') }}" alt="qoin" style="width: 20px; height: 20px;">
+        <h3 class="white100"><span id="balanceAmount">0</span></h3>
+      </span>
+      
+    </div>
+  </div>
+
+  <!-- Modal Order Found -->
+  <div id="orderModal" class="modal">
+      <div class="modal-content">
+
+        <!--Modal header-->
+        <span class="modal_header">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+            <span class="hstack gap4 aic">
+              <img src="{{ url_for('static', filename='img/icon/qoin.png') }}" alt="qoin" style="width: 36px; height: 36px;">
+              <h1 id="orderPayout" class="black100">1000000</h1>
+            </span>
+            
+          </div>
+          
+          <!--Close-->
+          <span class="icon_button graybg close" data-close="orderModal">
+            <img src="{{ url_for('static', filename='img/icon/cross.svg') }}" alt="Close" class="icon">
+          </span>
+        </span>
+        
+
+        <!--Modal body-->
+        <div style="display: flex; flex-direction: column; gap: 24px; padding: 0px 16px 16px 16px;">
+
+
+          <!--Adress information-->
+          <div style="display: flex; flex-direction: column; gap: 0px;">
+
+            <!--Pickup-->
+            <span style="display: flex; flex-direction: row; gap: 4px; ">
+
+              <span class="bg-black100" style="display: flex; align-items: center; justify-content: center; border-radius: 1000px; width: 20px; height: 20px;">
+                <img src="{{ url_for('static', filename='img/icon/bag_white.svg') }}" style="width: 14px; height: 14px; ">
+              </span>
+
+              <p class="black100" id="orderPickupName">KFC Almaly</p>
+            </span>
+
+            <span class="bg-black100" style="display: block; width: 2px; height: 16px; margin-left: 9px;"></span>
+
+            <!--Dropoff-->
+            <span style="display: flex; flex-direction: row; gap: 4px; ">
+
+              <span class="bg-black100" style="display: flex; align-items: center; justify-content: center; border-radius: 1000px; width: 20px; height: 20px;">
+                <img src="{{ url_for('static', filename='img/icon/home_white.svg') }}" style="width: 14px; height: 14px; ">
+              </span>
+
+              <p class="black100" id="orderDropoffAddress">KFC Almaly</p>
+            </span>
+
+
+          </div>
+          
+          <!-- Order_details -->
+          <div style="display: flex; flex-direction: row; gap: 8px; margin-bottom: 8px;">
+
+            <!--Distance-->
+            <span style="display: flex;flex-direction: row; align-items: center;  gap: 4px;">
+              <img src="{{ url_for('static', filename='img/icon/distance.svg') }}" class="icon_20">
+              <p class="black100" id="orderDistance">2.3 км</p>
+            </span>
+
+            <p class="black100">·</p>
+
+            <!--Time-->
+            <span style="display: flex; flex-direction: row; align-items: center;  gap: 4px;">
+              <img src="{{ url_for('static', filename='img/icon/time.svg') }}" class="icon_20">
+              <p class="black100" id="orderTime">~15 мин</p>
+            </span>
+
+          </div>
+            
+
+          <!-- Action_block -->
+          <div style="margin-top: auto; display: flex; gap: 12px;">
+            <button class="accept-btn action_button">
+              <h3 class="white100">Взять заказ</h3>
+            </button>
+          </div>
+
+
+        </div>
+      </div>
+  </div>
+
+  <!-- Modal Game Settings -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-content">
+
+        <!--Modal header-->
+        <span class="modal_header">
+          <h1 class="black100">Параметры</h1>
+          <span class="icon_button graybg close" data-close="settingsModal">
+            <img src="{{ url_for('static', filename='img/icon/cross.svg') }}" alt="Close" class="icon">
+          </span>
+        </span>
+        
+
+        <!--Radius-->
+        <div style="padding: 16px; flex: 1;">
+          <div style="margin-bottom: 24px;">
+
+            <span class="hstack aic">
+              <p class="black100 w100">Радиус поиска</p>
+              <span id="radiusValue" class="black100" style="white-space: nowrap;">5 км</span>
+            </span>
+
+            <input type="range" id="searchRadius" min="1" max="25" value="5" 
+                   style="width: 100%;">
+
+            <div style="display: flex; justify-content: space-between; color: #666; font-size: 14px;">
+            </div>
+          </div>
+
+
+          <h4 class="black100" style="margin-bottom: 12px;">Навигатор по умолчанию</h4>
+          <!-- Выбор картографического сервиса -->
+          <div style="margin-bottom: 24px;">
+
+            <!--Map selector-->
+            <button 
+              onclick="window.mapServiceSelector?.openModal()" class="cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="selectedMapServiceName">2GIS</span>
+                
+                <img src="{{ url_for('static', filename='img/icon/arrow_right.svg') }}" alt=">" class="icon_24 cell_chevron">
+              </div>
+
+                
+            </button>
+          </div>
+          
+
+
+        </div>
+      </div>
+    </div>
+
+  <!--Report Button (показывается только при активном заказе)-->
+    <button id="reportButton" class="icon_button" style="display: none;">
+      <img src="{{ url_for('static', filename='img/icon/report.svg') }}" alt="Report" class="icon">
+    </button>
+    
+    
+  <!--Map Controls-->
+  <div class="map_button">
+
+    
+
+    <!-- Modal Profile Settings -->
+    <div id="profileSettingsModal" class="modal">
+      <div class="modal-content">
+        
+        <!--Modal header-->
+        <span class="modal_header" style="gap: 8px; justify-content: flex-start;">
+
+
+          <!-- Back -->
+          <span class="icon_button graybg" onclick="closeModal('profileSettingsModal'); openModal('profileModal');">
+            <img src="{{ url_for('static', filename='img/icon/arrow_left.svg') }}" alt="Back" class="icon">
+          </span>
+
+          <h1 class="black100">Настройки</h1>
+          
+
+        </span>
+        
+        <!--Modal body-->
+        <div style="padding: 24px 16px 24px 16px; flex: 1;">
+          
+          <span style="display: flex; flex-direction: column; gap: 0px;">
+            
+            <!-- Секция: Аккаунт -->
+            <div style="margin-bottom: 24px;">
+              
+              <!-- При клике на кнопку открывается модальное окно измнение логина -->
+              <button class="cell">
+                <img src="{{ url_for('static', filename='img/icon/user.svg') }}" alt="Профиль" class="icon_24">
+                <h4 class="black100">Вставить сюда login</h4>
+                <img src="{{ url_for('static', filename='img/icon/arrow_right.svg') }}" alt=">" class="icon_24 cell_chevron">
+              </button>
+
+              <!-- При клике на кнопку открывается модальное окно измнение пароля -->
+              <button class="cell">
+                <img src="{{ url_for('static', filename='img/icon/user.svg') }}" alt="Профиль" class="icon_24">
+                <h4 class="black100">Изменить пароль</h4>
+                <img src="{{ url_for('static', filename='img/icon/arrow_right.svg') }}" alt=">" class="icon_24 cell_chevron">
+              </button>
+
+                          <!-- Секция: Приложение -->
+            <div>
+              
+            
+              
+
+            </div>
+            
+          <!-- Logout -->
+              <button id="logoutBtn" class="cell" style="border-top: 1px solid var(--white20);">
+                <img src="{{ url_for('static', filename='img/icon/door.svg') }}" alt="Support" class="icon_24">
+                <h4 class="red100">Выйти из аккаунта</h4>
+          </button>
+           
+          </div>
+
+            
+          </span>
+        </div>
+      </div>
+    </div>
+
+    
+
+    
+
+    
+
+
+    <!--Buttons_stack-->
+    <span class="hstack gap8 w100">
+      <!--Profile Button-->
+      <button id="profileButton" class="icon_button">
+        <img src="{{ url_for('static', filename='img/icon/user.svg') }}" alt="Profile Icon" class="icon">
+      </button>
+
+      <!--Main Action Button (Start Shift)-->
+      <button id="startGame" class="action_button">
+        <h3 class="white100">Разрешить GPS</h3>
+      </button>
+
+      <!--Settings Button-->
+      <button class="icon_button" onclick="openModal('settingsModal')">
+        <img src="{{ url_for('static', filename='img/icon/filter.svg') }}" alt="Settings Icon" class="icon">
+      </button>
+    </span>
+
+    <span class="vstack gap16" style="margin-top: 24px;">
+
+
+      <!--Banner-->
+      <a href="https://t.me/q_ryer" target="_blank">
+        <img class="w100" style="height: auto; border-radius: 16px;" src="{{ url_for('static', filename='img/telegram_banner.jpg') }}" alt="Telegram_chanell">
+      </a>
+
+
+
+      <!--Cells-->
+      <div class="cells_group">
+        <div class="cells_group_body">
+
+          <a href="faq" class="cell">
+            <img class="cell_icon" src="{{ url_for('static', filename='img/icon/faq.svg') }}" alt="FAQ">
+            <p>Вопросы ответы</p>
+
+            <img class="cell_chevron" src="{{ url_for('static', filename='img/icon/arrow_right.svg') }}" alt="chevron">
+          </a>
+
+          <a href="https://tally.so/r/3Ey0pN" target="_blank" class="cell">
+            <img class="cell_icon" src="{{ url_for('static', filename='img/icon/support.svg') }}" alt="FAQ">
+            <p>Поддержка</p>
+            
+            <img class="cell_chevron" src="{{ url_for('static', filename='img/icon/arrow_right.svg') }}" alt="chevron">
+          </a>
+
+          
+
+        </div>
+      </div>
+
+      <!--Cells-->
+      <div class="cells_group">
+        <div class="cells_group_body">
+
+
+          <a href="/privacy" class="cell">
+            
+            <p>Политика обработки персональных данных</p>
+
+            <img class="cell_chevron" src="{{ url_for('static', filename='img/icon/arrow_right.svg') }}" alt="chevron">
+          </a>
+
+          <button class="cell">
+                <p class="black100">О приложении</p>
+                <p class="black60" style="margin-left: auto; margin-right: 8px;">v1.0.0</p>
+          </button>
+
+
+
+
+          
+
+        </div>
+      </div>
+
+
+      <!-- Кнопка завершения смены -->
+        <button id="endShiftBtn" class="action_button2">
+            <h3 class="white100">Завершить смену</h3>
+        </button>
+    </span>
+
+    <!--Center on User Button-->
+    <button id="centerLocationButton" class="icon_button myloc">
+      <img src="{{ url_for('static', filename='img/icon/target.svg') }}" alt="My Location Icon" class="icon">
+    </button>
+
+  </div>
+
+  <!--Order Status Block-->
+  <div id="orderStatusBlock" class="order-status-block" style="display: none;">
+    <div class="order-status-content">
+      <div class="order-status-header">
+        <span class="order-status-icon bg-black100">
+          <img src="{{ url_for('static', filename='img/icon/bag_white.svg') }}" alt="Bag" class="icon_20">
+        </span>
+        <h2 class="black100">Заберите заказ</h2>
+      </div>
+      <p class="black100 order-status-text">Направляйтесь в зону получения</p>
+    </div>
+  </div>
+
+  <!-- Модальное окно выбора картографического сервиса -->
+  <div id="mapServiceModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal_header" style="justify-content: flex-start; gap: 8px;">
+
+        <!-- Back -->
+        <span class="icon_button graybg" onclick="closeModal('mapServiceModal'); openModal('settingsModal');">
+          <img src="{{ url_for('static', filename='img/icon/arrow_left.svg') }}" alt="Back" class="icon">
+        </span>
+
+        <h2>Карты</h2>
+
+      </div>
+      
+      <div style="padding: 16px; flex: 1;">
+        <h4 class="black100">Выберите сервис для навигации:</h4>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+
+          <!--2gis-->
+          <div class="cell" data-service="2gis">
+            
+            <label for="service-2gis" style="display: flex; align-items: center; gap: 8px;">
+              <img src="{{ url_for('static', filename='img/map_icons/2gis.png') }}" alt="2GIS" class="cell_icon">
+              <h4 class="black100">2GIS</h4>
+            </label>
+
+            <input type="radio" id="service-2gis" name="mapService" value="2gis" class="cell_radio">
+          </div>
+          
+          <!--Yandex Maps-->
+          <div class="cell" data-service="yandex">
+            
+            <label for="service-yandex" style="display: flex; align-items: center; gap: 8px;">
+              <img src="{{ url_for('static', filename='img/map_icons/yandex.png') }}" alt="Яндекс" class="cell_icon">
+
+              <h4 class="black100">Яндекс Карты</h4>
+            </label>
+
+            <input type="radio" id="service-yandex" name="mapService" value="yandex" class="cell_radio">
+          </div>
+          
+          <!--Organic Maps-->
+          <div class="cell" data-service="organic">
+            
+            <label for="service-organic" style="display: flex; align-items: center; gap: 8px;">
+              <img src="{{ url_for('static', filename='img/map_icons/organic.png') }}" alt="Organic Maps" class="cell_icon">
+              
+              <h4 class="black100">Organic Maps</h4>
+            </label>
+
+            <input type="radio" id="service-organic" name="mapService" value="organic" class="cell_radio">
+          </div>
+        </div>
+      </div>
+      
+      <div style="width: 100%; display: flex; justify-content: center; align-items: center; padding: 16px;">
+        <button class="action_button" onclick="window.mapServiceSelector?.saveSelection()">
+          <h3 class="white100">Сохранить</h3>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!--Mapbox Map Container-->
+  <div id="map"></div>
+
+{% endblock %}
+
+
+<!--Sripts-->
+{% block scripts %}
+  <!-- Подключаем библиотеку Mapbox (версия v3.0.0) -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+
+  <!-- Устанавливаем токен Mapbox (после подключения библиотеки) -->
+  <script>
+    if (typeof mapboxgl !== 'undefined') {
+      mapboxgl.accessToken = "{{ mapbox_token }}";
+      console.log("✅ Mapbox токен установлен");
+    } else {
+      console.error("❌ Mapbox GL не загружен");
+    }
+  </script>
+
+  <!-- Подключаем модуль геолокации (должен быть загружен первым) -->
+  <script src="{{ url_for('static', filename='js/geolocation.js') }}"></script>
+
+  <!-- Подключаем модули -->
+  <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/gameState.js') }}"></script>
+  <!-- Модуль модальных окон для замены alert() (должен быть первым) -->
+  <script src="{{ url_for('static', filename='js/modules/alertModal.js' ) }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/stateManager.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/mapManager.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/orderModal.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/shiftManager.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/socketManager.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/mapServiceSelector.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/orderStatusBanner.js') }}"></script>
+
+  <!-- Главный файл -->
+  <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+  <!-- Debug утилиты (только для development) -->
+  <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+
+  <!-- Дополнительные обработчики -->
+  <script>
+    // Обработчик изменения радиуса поиска
+    document.addEventListener('DOMContentLoaded', () => {
+      // Показываем отладочную панель в режиме разработки
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        document.getElementById('debugPanel').style.display = 'block';
+        
+        // Обновляем отладочную информацию
+        setInterval(() => {
+          const debugGPS = document.getElementById('debugGPS');
+          const debugState = document.getElementById('debugState');
+          const debugButton = document.getElementById('debugButton');
+          
+          if (window.geoManager && debugGPS) {
+            debugGPS.textContent = window.geoManager.currentPosition ? '✅' : '❌';
+          }
+          
+          if (window.gameState && debugState) {
+            debugState.textContent = `shift:${window.gameState.isOnShift} search:${window.gameState.isSearching}`;
+          }
+          
+          if (debugButton) {
+            const button = document.getElementById('startGame');
+            if (button) {
+              debugButton.textContent = button.querySelector('h3').textContent.slice(0, 15);
+            }
+          }
+        }, 1000);
+      }
+      
+      const radiusSlider = document.getElementById('searchRadius');
+      const radiusValue = document.getElementById('radiusValue');
+      
+        if (radiusSlider && radiusValue) {
+        // Загружаем сохраненное значение
+        const savedRadius = localStorage.getItem('search_radius_km') || '5';
+        radiusSlider.value = savedRadius;
+        radiusValue.textContent = savedRadius + ' км';
+        
+        // Обновление в реальном времени
+        radiusSlider.addEventListener('input', (e) => {
+          radiusValue.textContent = e.target.value + ' км';
+        });
+        
+        // Сохранение на сервер
+        radiusSlider.addEventListener('change', async (e) => {
+          const newRadius = parseInt(e.target.value);
+          const userId = window.gameState?.userId;
+          if (!userId) return;
+          
+          try {
+            const res = await window.apiFetch('/api/search_radius', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({user_id: userId, radius_km: newRadius})
+            });
+            const result = await res.json();
+            if (result.success) {
+              localStorage.setItem('search_radius_km', newRadius);
+              console.log(`✅ Радиус: ${newRadius} км`);
+            }
+          } catch (e) { console.error('❌ Ошибка радиуса', e); }
+        });
+      }
+      
+      // Показ/скрытие кнопки "Завершить смену"
+      const profileButton = document.getElementById("profileButton");
+      if (profileButton) {
+        profileButton.addEventListener("click", () => {
+          const endShiftBtn = document.getElementById("endShiftBtn");
+          if (endShiftBtn && window.gameState) {
+            endShiftBtn.style.display = window.gameState.isOnShift ? "flex" : "none";
+          }
+        });
+      }
+      
+      // Обновление информации о GPS в настройках
+      setInterval(() => {
+        if (window.geoManager && window.geoManager.currentPosition) {
+          const accuracy = window.geoManager.currentPosition.coords.accuracy;
+          const quality = window.geoManager.getGPSQuality();
+          
+          const accuracyEl = document.getElementById('settingsGpsAccuracy');
+          const qualityEl = document.getElementById('settingsGpsQuality');
+          const profileGpsEl = document.getElementById('profileGpsStatus');
+          
+          if (accuracyEl) accuracyEl.textContent = Math.round(accuracy) + ' м';
+          if (qualityEl) {
+            qualityEl.textContent = {
+              'excellent': 'Отличное',
+              'good': 'Хорошее', 
+              'fair': 'Удовлетворительное',
+              'poor': 'Плохое'
+            }[quality] || quality;
+          }
+          if (profileGpsEl) {
+            profileGpsEl.textContent = 'Подключен';
+            profileGpsEl.style.color = '#00aa44';
+          }
+        }
+      }, 2000);
+    });
+
+    // Загрузка версии приложения из API
+window.apiFetch('/api/app_info')
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Обновляем версию в модалке
+      const versionElements = document.querySelectorAll('#profileSettingsModal p.black60');
+      versionElements.forEach(el => {
+        if (el.textContent.includes('v')) {
+          el.textContent = 'v' + data.data.version;
+        }
+      });
+      console.log('✅ Версия приложения загружена:', data.data.version);
+    }
+  })
+  .catch(error => console.error('❌ Ошибка загрузки версии:', error));
+  </script>
+{% endblock %}

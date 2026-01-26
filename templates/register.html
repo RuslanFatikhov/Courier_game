@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — Q-RYER{% endblock %}
+{% block content %}
+<div class="bg-gr4" style="width: 100%; height: 100vh; display: flex; align-items: flex-end; justify-content:center; padding-bottom: 24px; overflow-y: hidden; padding-left: 16px; padding-right: 16px;">
+
+  <div class="login-modal-content" style="z-index: 1;">
+    
+    <span class="modal_header" style="gap: 8px; justify-content: space-between; padding: 0px !important;">
+      <h2 class="black100">Регистрация</h2>
+      <!-- Кнопка закрытия -->
+      <a href="/" class="icon_button graybg">
+        <img src="{{ url_for('static', filename='img/icon/cross.svg') }}" alt="Close" style="width: 24px; height: 24px;">
+      </a>
+    </span>
+    
+    <!-- Вход через Telegram -->
+    <div style="margin-bottom: 24px;">
+      <div id="telegram-login-container" style="display: flex; justify-content: center; margin-bottom: 16px; margin-top: 16px;">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+                data-telegram-login="qryer_bot"
+                data-size="large"
+                data-onauth="onTelegramAuth(user)"
+                data-request-access="write">
+        </script>
+      </div>
+      
+      <div style="display: flex; align-items: center; margin: 24px 0;">
+        <div style="flex: 1; height: 1px; background: #e0e0e0;"></div>
+        <span style="padding: 0 16px; color: #999; font-size: 13px;">или</span>
+        <div style="flex: 1; height: 1px; background: #e0e0e0;"></div>
+      </div>
+    </div>
+    
+    <!-- ШАГ 1: Отправка кода на email -->
+    <form id="sendCodeForm" class="vstack gap8">
+      <div>
+        <input 
+          type="email" 
+          id="email" 
+          name="email"
+          placeholder="Email"
+          required
+        >
+        <p style="font-size: 12px; color: #666; margin-top: 8px;">
+          Мы отправим код подтверждения на вашу почту
+        </p>
+      </div>
+      
+      <button type="submit" class="action_button" style="width: 100%; margin-top: 16px;">
+        <h3 class="white100">Отправить код</h3>
+      </button>
+    </form>
+    
+    <!-- ШАГ 2: Подтверждение кода и регистрация (скрыт по умолчанию) -->
+    <form id="verifyCodeForm" class="vstack gap8" style="display: none;">
+      <div class="message">
+        <p style="font-size: 13px; margin: 0;">
+          ✉️ Код отправлен на <strong id="sentEmail"></strong>
+        </p>
+      </div>
+      
+      <div>
+        <input 
+          type="text" 
+          id="code" 
+          name="code"
+          placeholder="Код подтверждения (6 цифр)"
+          maxlength="6"
+          required
+          style="letter-spacing: 3px; text-align: center; font-weight: bold;"
+        >
+      </div>
+      
+      <div>
+        <input 
+          type="text" 
+          id="username" 
+          name="username"
+          placeholder="Никнейм"
+          required
+        >
+      </div>
+      
+      <div>
+        <input 
+          type="password" 
+          id="password" 
+          name="password"
+          placeholder="Пароль (минимум 6 символов)"
+          required
+        >
+      </div>
+      
+      <button type="submit" class="action_button" style="width: 100%; margin-top: 16px;">
+        <h3 class="white100">Зарегистрироваться</h3>
+      </button>
+      
+      <button type="button" id="backButton" class="secondary_button" style="margin-top: 8px;">
+        ← Изменить email
+      </button>
+    </form>
+    
+    <a href="/login" class="secondary_button" style="margin-top: 8px;">Уже есть аккаунт</a>
+  </div>
+
+  <img src="/static/img/landing/landing-hero.png" alt="hero" style="position: fixed; width: 100%; margin-bottom: 400px;">
+</div>
+
+<script>
+let currentEmail = '';
+
+// Обработка авторизации через Telegram
+function onTelegramAuth(user) {
+  console.log('Telegram auth data:', user);
+  
+  // Отправляем данные на сервер
+  fetch('/api/auth/telegram_login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(user)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Сохраняем userId в localStorage
+      localStorage.setItem('courier_user_id', data.user.id);
+      localStorage.setItem('courier_username', data.user.username);
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      
+      // Очищаем старое состояние игры
+      localStorage.removeItem('courierGameState');
+      
+      // Редирект на игру
+      window.location.href = '/game';
+    } else {
+      alert('Ошибка входа через Telegram: ' + (data.error || 'Неизвестная ошибка'));
+    }
+  })
+  .catch(error => {
+    console.error('Telegram login error:', error);
+    alert('Ошибка соединения с сервером');
+  });
+}
+
+// ШАГ 1: Отправка кода на email
+document.getElementById('sendCodeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const email = document.getElementById('email').value.trim();
+  const button = e.target.querySelector('button');
+  const buttonText = button.querySelector('h3');
+  
+  if (!email) {
+    alert('Введите email');
+    return;
+  }
+  
+  // Блокируем кнопку
+  button.disabled = true;
+  buttonText.textContent = 'Отправка...';
+  
+  try {
+    const response = await fetch('/api/auth/register/send-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email: email })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Сохраняем email
+      currentEmail = email;
+      
+      // Показываем форму подтверждения кода
+      document.getElementById('sendCodeForm').style.display = 'none';
+      document.getElementById('verifyCodeForm').style.display = 'flex';
+      document.getElementById('sentEmail').textContent = email;
+      
+      // Фокус на поле кода
+      document.getElementById('code').focus();
+    } else {
+      alert('Ошибка: ' + (data.error || 'Не удалось отправить код'));
+      button.disabled = false;
+      buttonText.textContent = 'Отправить код';
+    }
+  } catch (error) {
+    console.error('Send code error:', error);
+    alert('Ошибка соединения с сервером');
+    button.disabled = false;
+    buttonText.textContent = 'Отправить код';
+  }
+});
+
+// ШАГ 2: Подтверждение кода и регистрация
+document.getElementById('verifyCodeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const code = document.getElementById('code').value.trim();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const button = e.target.querySelector('button[type="submit"]');
+  const buttonText = button.querySelector('h3');
+  
+  // Валидация
+  if (!code || !username || !password) {
+    alert('Заполните все поля');
+    return;
+  }
+  
+  if (code.length !== 6) {
+    alert('Код должен содержать 6 цифр');
+    return;
+  }
+  
+  if (password.length < 6) {
+    alert('Пароль должен содержать минимум 6 символов');
+    return;
+  }
+  
+  // Блокируем кнопку
+  button.disabled = true;
+  buttonText.textContent = 'Регистрация...';
+  
+  try {
+    const response = await fetch('/api/auth/register/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        email: currentEmail,
+        code: code,
+        username: username,
+        password: password
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Сохраняем userId в localStorage
+      localStorage.setItem('courier_user_id', data.user.id);
+      localStorage.setItem('courier_username', data.user.username);
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      
+      // Очищаем старое состояние игры
+      localStorage.removeItem('courierGameState');
+      
+      // Показываем успешное сообщение
+      alert('✅ Регистрация успешна! Добро пожаловать в игру!');
+      
+      // Редирект на игру
+      window.location.href = '/game';
+    } else {
+      alert('Ошибка регистрации: ' + (data.error || 'Неизвестная ошибка'));
+      button.disabled = false;
+      buttonText.textContent = 'Зарегистрироваться';
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    alert('Ошибка соединения с сервером');
+    button.disabled = false;
+    buttonText.textContent = 'Зарегистрироваться';
+  }
+});
+
+// Кнопка "Назад" - возврат к вводу email
+document.getElementById('backButton').addEventListener('click', () => {
+  document.getElementById('verifyCodeForm').style.display = 'none';
+  document.getElementById('sendCodeForm').style.display = 'flex';
+  
+  // Очищаем поля
+  document.getElementById('code').value = '';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  
+  // Разблокируем кнопку отправки кода
+  const button = document.getElementById('sendCodeForm').querySelector('button');
+  button.disabled = false;
+  button.querySelector('h3').textContent = 'Отправить код';
+});
+</script>
+{% endblock %}
